@@ -1,7 +1,10 @@
 package org.example.multimodule.app.controller;
 
 import org.example.multimodule.persistence.domain.User;
+import org.example.multimodule.persistence.mapper.UserDynamicSqlSupport;
 import org.example.multimodule.persistence.mapper.UserMapper;
+import org.mybatis.dynamic.sql.SqlBuilder;
+import org.mybatis.dynamic.sql.render.RenderingStrategies;
 
 import javax.inject.Inject;
 import javax.transaction.Transactional;
@@ -25,7 +28,7 @@ public class UserController {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Transactional
-    public User save(@FormParam("nickname") String nickname){
+    public User insert(@FormParam("nickname") String nickname){
         var user = new User();
         user.setNickname(nickname);
         user.setCreateTime(new Date());
@@ -38,6 +41,11 @@ public class UserController {
     @Path("select")
     @Produces(MediaType.APPLICATION_JSON)
     public List<User> select(){
-        return mapper.select(null);
+        var sqlProvider = SqlBuilder.select(
+                UserMapper.selectList
+        ).from(UserDynamicSqlSupport.user)
+                .build()
+                .render(RenderingStrategies.MYBATIS3);
+        return mapper.selectMany(sqlProvider);
     }
 }
